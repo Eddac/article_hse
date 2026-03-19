@@ -1,0 +1,243 @@
+---
+title: "01_data_cleaning"
+output: html_document
+date: "2026-03-19"
+---
+
+# Carregamento de pacotes
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(expss)
+library(igraph)
+library(lme4)
+library(lmerTest)
+library(mlmRev)
+library(psych)
+library(qgraph)
+library(sjPlot)
+library(purrr)
+library(ggplot2)
+```
+
+# Carregando banco de dados  
+- Ao todo, os questionários foram aplicados em **9 turmas**. Porém, apenas **8 turmas** apresentaram engajamento mais próximo de 100%, a participação da maior parcela da turma era importante para obter redes mais fidedignas com o ambiente de sala de aula.  
+Dessas turmas, 2 foram da **Univasf/Petrolina** e as demais foram de **Recife/UFPE**. 5 turmas foram de Psicologia, 2 de Serviço Social e 1 de Odonto.  
+```{r}
+# Carregando banco de dados no R   ---------------------------------
+Dados_ser_ <- readxl::read_xlsx("HSE_DOC_SERSO_2.xlsx") #1
+Dados_ser_2 <- readxl::read_xlsx("HSE_DOC_SERV_2022.xlsx") #2
+Dados_AP_ <- readxl::read_xlsx("HSE_AP.xlsx") #3
+Dados_mau_ <- readxl::read_xlsx("HSE_DOC_MAU_2.xlsx") #4
+Dados_Odo <- readxl::read_xlsx("HSE_DOC_Odonto.xlsx") #5
+Dados_AP_2022 <- readxl::read_xlsx("HSE_DOC_PSI_2022.xlsx") #6
+Dados_Petrolina_1 <- readxl::read_xlsx("HSE_DOC_DEB_UNIVASF_1.xlsx") #7
+Dados_Petrolina_3 <- readxl::read_xlsx("HSE_DOC_DEB_UNIVASF_3.xlsx") #8
+```
+
+A participante A33 respondeu o questionário 2 vezes e solicitou a retirada do primeiro momento de resposta.
+```{r}
+# retirada da linha 33 por ser repetida com a linha 35 (A33)
+Dados_AP_ <- Dados_AP_ %>% slice(-33)
+```
+
+# Início das análises
+
+Os questionários não ficaram perfeitamente padronizados. Por isso, a parte inicial das análises se concentra na organização dos dados.
+```{r}
+# transformações dos dados de AP para padronizar com SC
+Dados_AP_ <- Dados_AP_ %>% rename("1ª Amizade" = "1ª amizade", 
+                                  "2ª Amizade" = "2ª amizade",
+                                  "3ª Amizade" = "3ª amizade",
+                                  "4ª Amizade" = "4ª amizade",
+                                  "5ª Amizade" = "5ª amizade",
+                                  "1º Distanciamento" = "1ª distanciamento",
+                                  "2º Distanciamento" = "2ª distanciamento",
+                                  "3º Distanciamento" = "3ª distanciamento",
+                                  "4º Distanciamento" = "4ª distanciamento",
+                                  "5º Distanciamento" = "5ª distanciamento")
+
+# transformações dos dados do mau para padronizar com SC
+Dados_mau_ <- Dados_mau_ %>% rename("1ª Amizade" = "1ª Proximidade", 
+                                    "2ª Amizade" = "2ª Proximidade",
+                                    "3ª Amizade" = "3ª Proximidade",
+                                    "4ª Amizade" = "4ª Proximidade",
+                                    "5ª Amizade" = "5ª Proximidade")
+
+Dados_Odo <- Dados_Odo %>% rename(Idade = `Idade (apenas números)`)
+```
+
+Após a primeira padronização, criou-se um dataframe único por nome ``df_geral`` com todos os bancos de dados.
+```{r}
+# Unir todos os bancos     ------------------------------
+df_geral <- rbind(Dados_AP_, Dados_AP_2022, Dados_mau_, 
+                  Dados_ser_, Dados_ser_2, Dados_Petrolina_1,
+                  Dados_Petrolina_3, Dados_Odo)
+```
+
+Um banco de dados de Psicologia estava com a opção de respostas repetidas, por isso, no momento da aplicação, as informações corretas foram passadas com o respectivo posicionamento das respostas, assim os estudantes escolhiam a opção de acordo com essas informações.Em seguida, foi feita a transformação no banco de dados.
+```{r}
+# Correção de respostas dos sujeitos de psicologia RV_03, pois houve uma duplicação.
+recode(df_geral[, 48]) <- c("Primavera"~"Médico", "Férias"~"Hospital", "Sol"~"Doença", "Verão"~"Dor", "Ventilador"~"Coração")
+```
+
+```{r}
+# rename de raciocínio verbal
+df_geral <- df_geral %>% rename(RV_01 = 46,
+                                RV_02 = 47,
+                                RV_03 = 48,
+                                RV_04 = 49,
+                                RV_05 = 50,
+                                RV_06 = 51,
+                                RV_07 = 52,
+                                RV_08 = 53,
+                                RV_09 = 54,
+                                RV_10 = 55,
+                                RV_11 = 56,
+                                RV_12 = 57)
+```
+
+- Correção das perguntas de raciocínio verbal. **Respostas corretas = 1 / Respostas erradas = 0**
+```{r}
+## Correção do raciocínio verbal ----
+df_geral$rv01 <- ifelse(df_geral$RV_01 == "Dia",1,0)
+df_geral$rv02 <- ifelse(df_geral$RV_02 == "Verão",1,0) 
+df_geral$rv03 <- ifelse(df_geral$RV_03 == "Doença",1,0) 
+df_geral$rv04 <- ifelse(df_geral$RV_04 == "Derrota",1,0) 
+df_geral$rv05 <- ifelse(df_geral$RV_05 == "Certeza",1,0) 
+df_geral$rv06 <- ifelse(df_geral$RV_06 == "Vender",1,0) 
+df_geral$rv07 <- ifelse(df_geral$RV_07 == "Literatura",1,0) 
+df_geral$rv08 <- ifelse(df_geral$RV_08 == "Cume",1,0) 
+df_geral$rv09 <- ifelse(df_geral$RV_09 == "Futuro",1,0) 
+df_geral$rv10 <- ifelse(df_geral$RV_10 == "Precoce",1,0) 
+df_geral$rv11 <- ifelse(df_geral$RV_11 == "Avaliar",1,0) 
+df_geral$rv12 <- ifelse(df_geral$RV_12 == "Perfume",1,0) 
+```
+
+Soma do resultado em RV
+```{r}
+# escore total
+df_geral$rvtotal <- df_geral %>% select(123:134) %>% rowSums()
+```
+
+renomeando esses itens para facilitar a inversão, pois são itens negativos.
+```{r}
+df_geral <- df_geral %>% rename(C3 = 'Por mais que tente, não consigo controlar a expressão do que estou sentindo.')
+df_geral <- df_geral %>% rename(C16 = 'Frustrações deixam-me desanimado/a por bastante tempo.')
+df_geral <- df_geral %>% rename(C28 = 'Tenho vergonha de expressar os meus sentimentos.')
+```
+
+- Inversão de itens
+```{r}
+df_geral$C3_inv <- ifelse(df_geral$C3 %in% c(5), 1,
+                   ifelse(df_geral$C3 %in% c(4), 2,
+                   ifelse(df_geral$C3 %in% c(3), 3,
+                   ifelse(df_geral$C3 %in% c(2), 4,
+                   ifelse(df_geral$C3 %in% c(1), 5, df_geral$C3)))))
+
+df_geral$C16_inv <- ifelse(df_geral$C16 %in% c(5), 1,
+                    ifelse(df_geral$C16 %in% c(4), 2,
+                    ifelse(df_geral$C16 %in% c(3), 3,
+                    ifelse(df_geral$C16 %in% c(2), 4,
+                    ifelse(df_geral$C16 %in% c(1), 5, df_geral$C16)))))
+
+df_geral$C28_inv <- ifelse(df_geral$C28 %in% c(5), 1,
+                    ifelse(df_geral$C28 %in% c(4), 2,
+                    ifelse(df_geral$C28 %in% c(3), 3,
+                    ifelse(df_geral$C28 %in% c(2), 4,
+                    ifelse(df_geral$C28 %in% c(1), 5, df_geral$C28)))))
+```
+
+## Cálculo dos fatores de Competências Emocionais
+```{r}
+df_geral$CF1 <- df_geral %>% select(12,16,19,26,34,37,40,42) %>% rowMeans()
+df_geral$CF2 <- df_geral %>% select(15,22,25,137,32,35,38) %>% rowMeans()
+df_geral$CF3 <- df_geral %>% select(17,19,138,43) %>% rowMeans()
+df_geral$CF4 <- df_geral %>% select(13,18,21,23,30,33,44) %>% rowMeans()
+df_geral$CF5 <- df_geral %>% select(136,20,24,28,31,36,45) %>% rowMeans()
+df_geral$C_GERAL <- df_geral %>% select(139:143) %>% rowMeans()
+```
+  
+## Cálculo dos fatores de Habilidades
+  
+Inversão dos itens negativos
+```{r}
+# Fator 1 - neuroticismo 
+# itens invertidos - 98, 106
+df_geral$H98_inv <- ifelse(df_geral$`Controlo meus sentimentos.` %in% c(5), 1,
+                    ifelse(df_geral$`Controlo meus sentimentos.` %in% c(4), 2,
+                    ifelse(df_geral$`Controlo meus sentimentos.` %in% c(3), 3,
+                    ifelse(df_geral$`Controlo meus sentimentos.` %in% c(2), 4,
+                    ifelse(df_geral$`Controlo meus sentimentos.` %in% c(1), 5, df_geral$`Controlo meus sentimentos.`)))))
+
+df_geral$H106_inv <- ifelse(df_geral$`Sou calmo(a) e controlo bem meu estresse.` %in% c(5), 1,
+                     ifelse(df_geral$`Sou calmo(a) e controlo bem meu estresse.` %in% c(4), 2,
+                     ifelse(df_geral$`Sou calmo(a) e controlo bem meu estresse.` %in% c(3), 3,
+                     ifelse(df_geral$`Sou calmo(a) e controlo bem meu estresse.` %in% c(2), 4,
+                     ifelse(df_geral$`Sou calmo(a) e controlo bem meu estresse.` %in% c(1), 5, df_geral$`Sou calmo(a) e controlo bem meu estresse.`)))))
+
+
+
+## Fator 2 - inverter: 104,109
+df_geral$H104_inv <- ifelse(df_geral$`Sou meio desleixado(a), não tenho cuidado na hora de fazer as coisas.` %in% c(5), 1,
+                     ifelse(df_geral$`Sou meio desleixado(a), não tenho cuidado na hora de fazer as coisas.` %in% c(4), 2,
+                     ifelse(df_geral$`Sou meio desleixado(a), não tenho cuidado na hora de fazer as coisas.` %in% c(3), 3,
+                     ifelse(df_geral$`Sou meio desleixado(a), não tenho cuidado na hora de fazer as coisas.` %in% c(2), 4,
+                     ifelse(df_geral$`Sou meio desleixado(a), não tenho cuidado na hora de fazer as coisas.` %in% c(1), 5, 
+                            df_geral$`Sou meio desleixado(a), não tenho cuidado na hora de fazer as coisas.`)))))
+
+df_geral$H109_inv <- ifelse(df_geral$`Costumo ser desorganizado(a).` %in% c(5), 1,
+                     ifelse(df_geral$`Costumo ser desorganizado(a).` %in% c(4), 2,
+                     ifelse(df_geral$`Costumo ser desorganizado(a).` %in% c(3), 3,
+                     ifelse(df_geral$`Costumo ser desorganizado(a).` %in% c(2), 4,
+                     ifelse(df_geral$`Costumo ser desorganizado(a).` %in% c(1), 5, 
+                            df_geral$`Costumo ser desorganizado(a).`)))))
+
+
+
+
+
+
+## Fator 3 - Inverter: 113,115,118
+df_geral$H113_inv <- ifelse(df_geral$`Costumo ser quieto(a).` %in% c(5), 1,
+                     ifelse(df_geral$`Costumo ser quieto(a).` %in% c(4), 2,
+                     ifelse(df_geral$`Costumo ser quieto(a).` %in% c(3), 3,
+                     ifelse(df_geral$`Costumo ser quieto(a).` %in% c(2), 4,
+                     ifelse(df_geral$`Costumo ser quieto(a).` %in% c(1), 5, 
+                            df_geral$`Costumo ser quieto(a).`)))))
+
+df_geral$H115_inv <- ifelse(df_geral$`Sou reservado(a), fico mais na minha.` %in% c(5), 1,
+                     ifelse(df_geral$`Sou reservado(a), fico mais na minha.` %in% c(4), 2,
+                     ifelse(df_geral$`Sou reservado(a), fico mais na minha.` %in% c(3), 3,
+                     ifelse(df_geral$`Sou reservado(a), fico mais na minha.` %in% c(2), 4,
+                     ifelse(df_geral$`Sou reservado(a), fico mais na minha.` %in% c(1), 5, 
+                            df_geral$`Sou reservado(a), fico mais na minha.`)))))
+
+df_geral$H118_inv <- ifelse(df_geral$`Sou tímido(a), inibido(a).` %in% c(5), 1,
+                     ifelse(df_geral$`Sou tímido(a), inibido(a).` %in% c(4), 2,
+                     ifelse(df_geral$`Sou tímido(a), inibido(a).` %in% c(3), 3,
+                     ifelse(df_geral$`Sou tímido(a), inibido(a).` %in% c(2), 4,
+                     ifelse(df_geral$`Sou tímido(a), inibido(a).` %in% c(1), 5, 
+                            df_geral$`Sou tímido(a), inibido(a).`)))))
+
+```
+
+- Cálculo final  
+
+```{r}
+## Escores médios HSE
+df_geral$HF1 <- df_geral %>% select(145,92,96,97,105,146) %>% rowMeans() #Neuroticismo
+df_geral$HF2 <- df_geral %>% select(90,91,95,101,147,148) %>% rowMeans() #Concienciosidade
+df_geral$HF3 <- df_geral %>% select(149,150,116,117,151,119) %>% rowMeans() #Extroversão
+df_geral$HF4 <- df_geral %>% select(93,99,102,107,108,111) %>% rowMeans() #Amabilidade
+df_geral$HF5 <- df_geral %>% select(94,100,103,110,112,114) %>% rowMeans() #Abertura
+df_geral$H_GERAL <- df_geral %>% select(152:156) %>% rowMeans()
+```
+  
+## Cálculo dos fatores de Metas para Realização  
+```{r}
+## Correção metas para realização -----
+df_geral$MF1 <- df_geral %>% select(58:61, 64) %>% rowMeans() # Meta performance 
+df_geral$MF2 <- df_geral %>% select(62,63,65:70) %>% rowMeans() # Meta aprender
+df_geral$MF3 <- df_geral %>% select(71:74) %>% rowMeans() # Meta evitação
+df_geral$MF_GERAL <- df_geral %>% select(158:160) %>% rowMeans()
+```
