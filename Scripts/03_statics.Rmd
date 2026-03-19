@@ -1,0 +1,238 @@
+---
+title: "03_centrality_extraction"
+output: html_document
+date: "2026-03-19"
+---
+
+# Análise Estatísticas
+
+- Explicação básica sobre as centralidades
+
+Os tipos de centralidade destacam diferentes características no vértice perante a rede.  
+A **centralidade de grau** indica o quanto o vértice apresenta muitas conexões com outros vértices.  
+**Centralidade de proximidade** indica que mais importante que ter muitas conexões é não estar longe demais dos demais vértices.  
+*"Um nó importante está próximo dos outros nós"*  
+  
+**Centralidade de intermediação** indica o quanto o vértice é importante no caminho de outros vértices.  
+  
+*"Um nó importante faz parte de muitos caminhos"*  
+  
+  
+**Centralidade de autovetor**que no banco foi colocado como Proximidade. Indica que se sou vizinho de alguém importante eu também apresentarei importância.  
+  
+**Centralidade de autoridade** indica o quanto o vértice está conectado com outros hubs dentro da rede. Quanto maior essa conexão, mais forte é sua autoridade.
+```{r, warning=FALSE}
+# Seleção de todos os subfatores e fatores gerais
+df_principal <- df_geral %>% select(4,10,120,122,135,139:144,152:161)
+
+# Centralidade geral de todas as salas
+df_centralidade <- rbind(AP_centralidade_geral, SER_centralidade_geral, SER_2022_centralidade_geral, 
+                         ODO_centralidade_geral, AP_mau_centralidade_geral,
+                         AP_2022_centralidade_geral, PET3_centralidade_geral,
+                         PET1_centralidade_geral)
+
+df_principal <- df_principal %>% rename(Nome = "Seu nome")
+df_principal <- df_principal %>% rename(Curso = "Qual o seu curso?")
+df_principal_join <- inner_join(df_centralidade, df_principal, by = "Nome")
+df_principal_join <- df_principal_join %>% rename(nota = 'Desempenho no último semestre')
+df_principal_join$nota <- ifelse(df_principal_join$nota == "9.50 - 10",19,
+                          ifelse(df_principal_join$nota == "9 - 9.49",18,
+                          ifelse(df_principal_join$nota == "8.5 - 8.99",17,
+                          ifelse(df_principal_join$nota == "8 - 8.49",16,
+                          ifelse(df_principal_join$nota == "7.5 - 7.99",15,
+                          ifelse(df_principal_join$nota == "7 - 7.49",14,
+                          ifelse(df_principal_join$nota == "6.5 - 6.99",13,
+                          ifelse(df_principal_join$nota == "6 - 6.49",12,
+                          ifelse(df_principal_join$nota == "5.5 - 5.99",11,
+                          ifelse(df_principal_join$nota == "3 - 3.49",6,
+                          ifelse(df_principal_join$nota == "0 - 1",1, df_principal_join$nota)))))))))))
+df_principal_join$nota <- as.numeric(df_principal_join$nota)
+```
+
+# Carregamento de pacotes
+```{r}
+library(arsenal)
+library(olsrr)
+library(ggpubr)
+library(pander)
+```
+
+
+
+# Análises de correlação
+
+
+```{r}
+df_principal_join %>% select(2:6) %>% corr.test()
+df_principal_join %>% select(7:11) %>% corr.test()
+df_principal_join %>% select(12:16) %>% corr.test()
+```
+
+```{r}
+profm6 <- df_principal_join %>% select(6,11,16) %>% corr.test()
+profm6$stars 
+```
+
+```{r}
+profm <- corr.test(df_principal_join[20:36], df_principal_join[3:6])
+profm$stars 
+```
+
+```{r}
+cor.test(df_principal_join[20:36], df_principal_join[3:6]) %>% pander()
+```
+
+
+```{r}
+profm2 <- corr.test(df_principal_join[20:36], df_principal_join[7:11])
+profm2$stars
+```
+
+```{r}
+profm3 <- corr.test(df_principal_join[3:16], df_principal_join[18])
+profm3$stars
+```
+
+```{r}
+profm3 <- corr.test(df_principal_join[20:36], df_principal_join[12:16])
+profm3$stars
+```
+
+```{r}
+profm4 <- corr.test(df_principal_join[20:36], df_principal_join[20:36])
+profm4$stars
+```
+
+```{r}
+profm5 <- corr.test(df_principal_join[20:36], df_principal_join[18])
+profm5$stars
+```
+
+```{r}
+names(df_principal_join)
+```
+
+# Análises de regressão  
+
+## Análises dos pressupostos
+- Teste de normalidade
+```{r}
+ols_plot_resid_qq(mod1)
+```
+
+```{r}
+ols_plot_resid_qq(modP1)
+```
+
+```{r}
+ols_test_normality(mod1)
+```
+
+```{r}
+ols_test_normality(modP1)
+```
+
+```{r}
+ols_plot_resid_qq(modD)
+```
+
+```{r}
+ols_test_normality(modD)
+```
+
+```{r}
+ols_plot_resid_qq(mod_nota3)
+```
+
+```{r}
+ols_test_normality(mod_nota3)
+```
+
+
+- Teste de homocesta
+```{r}
+ols_plot_resid_fit(mod1)
+ols_test_breusch_pagan(mod1)
+```
+
+```{r}
+ols_plot_resid_fit(modP1)
+ols_test_breusch_pagan(modP1)
+```
+
+```{r}
+ols_plot_resid_fit(modD)
+ols_test_breusch_pagan(modD)
+```
+
+```{r}
+ols_plot_resid_fit(mod_nota3)
+ols_test_breusch_pagan(mod_nota3)
+```
+
+- Ind resi
+```{r}
+car::durbinWatsonTest(mod1)
+```
+
+```{r}
+car::durbinWatsonTest(modP1)
+```
+
+```{r}
+car::durbinWatsonTest(modD)
+```
+
+```{r}
+car::durbinWatsonTest(mod_nota3)
+```
+
+- Multicolinearidade 
+```{r}
+ols_coll_diag(mod1)
+```
+
+```{r}
+ols_coll_diag(modP1)
+```
+
+```{r}
+ols_coll_diag(modD)
+```
+
+```{r}
+ols_coll_diag(mod_nota3)
+```
+
+## Modelos de regressão para a tese  
+
+```{r}
+## Modelo de regressão 1 (TESE)
+mod1 <- lm(Autoridade ~ CF3 + HF3 + HF4 + HF5, df_principal_join)
+ols_regress(mod1)
+```
+
+```{r}
+ggplot(df_principal_join, aes(x = HF3, y = Autoridade)) +
+  geom_jitter() + geom_smooth(method = 'lm') +
+  ggpubr::stat_regline_equation(label.x = 5.1, label.y = 1.1) +
+  ggpubr::stat_cor(aes(label = ..rr.label..), method = 'pearson',
+                   label.x = 1, label.y = 0.9)
+```
+```{r}
+## Modelo de regressão 2 (TESE)
+modP1 <- lm(Autoridade_P ~ CF3 + CF4 + HF2 + HF3 + HF5, df_principal_join)
+ols_regress(modP1)
+```
+
+```{r}
+## Modelo de regressão 3 (TESE)
+modD <- lm(Grau_Entrada_D ~ HF2 + HF3 + HF4 + MF2 + MF3 + MF_GERAL, df_principal_join)
+ols_regress(modD)
+```
+
+```{r} 
+## Modelo de regressão 4 (TESE)
+mod_nota3 <- lm(nota ~ Autoridade_P + rvtotal, df_principal_join)
+ols_regress(mod_nota3)
+```
