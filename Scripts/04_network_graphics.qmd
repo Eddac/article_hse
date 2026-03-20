@@ -1,0 +1,218 @@
+---
+title: "04_network_graphics"
+format: html
+editor: visual
+---
+
+## 
+
+```{r}
+library(tidyverse)
+library(qgraph)
+library(bootnet)
+library(mgm)
+```
+
+```{r}
+# 1. Selecionar apenas as colunas dos escores fatoriais de interesse (Tabela 2)
+network_col_A <- df_universidade %>% select(HF3, HF4, HF5, CF3, Authority = Autoridade)
+# Você pode incluir outros escores fatoriais se desejar.
+
+# 2. Estimar a rede usando o método LASSO (GGM)
+rede_fatores_A <- estimateNetwork(
+  network_col_A, 
+  default = "glasso", # Método Glasso (GGM) para variáveis contínuas
+  tuning = 0.5        # Parâmetro de tuning (seleção de arestas). 
+                      # O padrão 'bootnet' usa busca otimizada
+)
+
+qgraph(
+  rede_fatores_A$graph, # <-- CORREÇÃO AQUI: Passamos a matriz de pesos
+  layout = "spring", 
+  labels = names(network_col_A), # Se essa variável contiver os nomes dos fatores
+  title = "Rede de Fatores Psicológicos"
+)
+
+# 4. Analisar a Centralidade da Rede (Ex: Closeness, Betweenness, Strength)
+centralidade <- centrality(rede_fatores_A)
+print(centralidade)
+
+# Para identificar qual fator é o mais "central" dentro do conjunto de fatores
+# (Não confundir com a Centralidade de Autoridade da Tabela 1!)
+```
+
+```{r}
+# 1. Abre o dispositivo gráfico e cria o arquivo PNG
+# Define o nome, a pasta (se quiser) e a resolução (em pixels, para alta qualidade)
+png(
+    filename = "rede_fatores_psicologicos_1.png", 
+    width = 1200, 
+    height = 900, 
+    res = 150 # Resolução em DPI
+)
+
+# 2. Roda o CÓDIGO DO PLOT
+# (Coloque aqui o seu código que gera a imagem da rede, o que no seu caso é o próprio plot)
+# Exemplo: plot(rede_fatores_A) ou plot(centralidade) dependendo da função que gera o gráfico
+
+# Simulação da plotagem da rede (substitua pelo seu código de plotagem real)
+plot(rede_fatores_A) 
+
+# 3. Fecha o dispositivo gráfico (Isso SALVA o arquivo)
+dev.off()
+```
+
+```{r}
+# 1. Selecionar apenas as colunas dos escores fatoriais de interesse (Tabela 2)
+network_col_B <- df_universidade %>% select(HF2, HF3, HF5, CF3, CF4, "P Authority" = Autoridade_P)
+# Você pode incluir outros escores fatoriais se desejar.
+
+# 2. Estimar a rede usando o método LASSO (GGM)
+rede_fatores_B <- estimateNetwork(
+  network_col_B, 
+  default = "glasso", # Método Glasso (GGM) para variáveis contínuas
+  tuning = 0.5        # Parâmetro de tuning (seleção de arestas). 
+                      # O padrão 'bootnet' usa busca otimizada
+)
+
+qgraph(
+  rede_fatores_B$graph, # <-- CORREÇÃO AQUI: Passamos a matriz de pesos
+  layout = "spring", 
+  labels = names(network_col_B), # Se essa variável contiver os nomes dos fatores
+  title = "Rede de Fatores Psicológicos"
+)
+
+# 4. Analisar a Centralidade da Rede (Ex: Closeness, Betweenness, Strength)
+centralidade <- centrality(rede_fatores_B)
+print(centralidade)
+
+# Para identificar qual fator é o mais "central" dentro do conjunto de fatores
+# (Não confundir com a Centralidade de Autoridade da Tabela 1!)
+```
+
+```{r}
+# 1. Abre o dispositivo gráfico e cria o arquivo PNG
+# Define o nome, a pasta (se quiser) e a resolução (em pixels, para alta qualidade)
+png(
+    filename = "rede_fatores_psicologicos_2.png", 
+    width = 1200, 
+    height = 900, 
+    res = 150 # Resolução em DPI
+)
+
+# 2. Roda o CÓDIGO DO PLOT
+# (Coloque aqui o seu código que gera a imagem da rede, o que no seu caso é o próprio plot)
+# Exemplo: plot(rede_fatores_A) ou plot(centralidade) dependendo da função que gera o gráfico
+
+# Simulação da plotagem da rede (substitua pelo seu código de plotagem real)
+plot(rede_fatores_B) 
+
+# 3. Fecha o dispositivo gráfico (Isso SALVA o arquivo)
+dev.off()
+```
+
+```{r}
+# 1. Selecionar apenas as colunas dos escores fatoriais de interesse (Tabela 2)
+network_col_C <- df_universidade %>% select(HF2, HF3, HF4, MF2, MF3, "MF General" = MF_GERAL,"In-deg D" = Grau_Entrada_D)
+# Você pode incluir outros escores fatoriais se desejar.
+
+# 2. Estimar a rede usando o método LASSO (GGM)
+rede_fatores_C <- estimateNetwork(
+  network_col_C, 
+  default = "glasso", # Método Glasso (GGM) para variáveis contínuas
+  tuning = 0.5        # Parâmetro de tuning (seleção de arestas). 
+                      # O padrão 'bootnet' usa busca otimizada
+)
+
+qgraph(
+  rede_fatores_C$graph, # <-- CORREÇÃO AQUI: Passamos a matriz de pesos
+  layout = "spring", 
+  labels = names(network_col_C), # Se essa variável contiver os nomes dos fatores
+  title = "Rede de Fatores Psicológicos"
+)
+
+# 4. Analisar a Centralidade da Rede (Ex: Closeness, Betweenness, Strength)
+centralidade <- centrality(rede_fatores_C)
+print(centralidade)
+
+# Para identificar qual fator é o mais "central" dentro do conjunto de fatores
+# (Não confundir com a Centralidade de Autoridade da Tabela 1!)
+```
+
+```{r}
+# 1. Abre o dispositivo gráfico e cria o arquivo PNG
+# Define o nome, a pasta (se quiser) e a resolução (em pixels, para alta qualidade)
+png(
+    filename = "rede_fatores_psicologicos_3.png", 
+    width = 1200, 
+    height = 900, 
+    res = 150 # Resolução em DPI
+)
+
+# 2. Roda o CÓDIGO DO PLOT
+# (Coloque aqui o seu código que gera a imagem da rede, o que no seu caso é o próprio plot)
+# Exemplo: plot(rede_fatores_A) ou plot(centralidade) dependendo da função que gera o gráfico
+
+# Simulação da plotagem da rede (substitua pelo seu código de plotagem real)
+plot(rede_fatores_C) 
+
+# 3. Fecha o dispositivo gráfico (Isso SALVA o arquivo)
+dev.off()
+```
+
+**Topologia**
+
+```{r}
+# Uma lista por tipo de rede, com os 9 grafos de cada turma
+redes_amizade     <- list(AP, AP_mau, SER_,
+                          SER_2022, ODO_, AP_2022,
+                          PET1, PET3)
+
+redes_profissional <- list(AP_p, AP_mau_p, SER_p,
+                           SER_2022_p, ODO_p, PET1_p,
+                           AP_2022_p, PET3_p)
+
+redes_distanc      <- list(AP_d, AP_mau_d, SER_d,
+                           SER_2022_d, ODO_d, AP_2022_d,
+                           PET1_d, PET3_d)
+```
+
+```{r}
+library(igraph)
+
+extrair_topologia <- function(lista_de_grafos) {
+  
+  resumo <- data.frame(
+    N     = sapply(lista_de_grafos, vcount),
+    E     = sapply(lista_de_grafos, ecount),
+    Dens  = sapply(lista_de_grafos, edge_density),
+    Recip = sapply(lista_de_grafos, function(g) {
+      if (is.directed(g)) reciprocity(g) else NA
+    }),
+    Dist  = sapply(lista_de_grafos, function(g) {
+      mean_distance(g, directed = is.directed(g), unconnected = TRUE)
+    })
+  )
+  
+  # Calcula M (SD) para cada métrica
+  apply(resumo, 2, function(x) {
+    x <- as.numeric(x)
+    paste0(round(mean(x, na.rm = TRUE), 2),
+           " (", round(sd(x, na.rm = TRUE), 2), ")")
+  })
+}
+```
+
+```{r}
+tabela_amizade <- extrair_topologia(redes_amizade)
+tabela_profis  <- extrair_topologia(redes_profissional)
+tabela_distanc <- extrair_topologia(redes_distanc)
+
+tabela_final <- data.frame(
+  `Network Type` = c("Friendship", "Professional", "Distancing"),
+  rbind(tabela_amizade, tabela_profis, tabela_distanc),
+  check.names = FALSE
+)
+
+print(tabela_final)
+```
